@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f1ea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Mes listes d'achats</title>
+<style>
+  :root {
+    --bg: #f6f1ea; --card: #fffdf9; --ink: #2b2520; --muted: #8a7f74;
+    --line: #e6ddd2; --accent: #a4502f; --accent-soft: #f3e2d8;
+    --ok: #4f7a4a; --warn: #b7791f; --warn-soft: #fbf0dc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  }
+  header { padding: 20px 16px 8px; }
+  h1 { font-size: 22px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  nav {
+    position: sticky; top: 0; z-index: 5; background: var(--bg);
+    display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px;
+    border-bottom: 1px solid var(--line); scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    flex: none; border: 1px solid var(--line); background: var(--card);
+    border-radius: 999px; padding: 7px 13px; font-size: 14px; color: var(--ink);
+  }
+  nav button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  nav .n { opacity: .6; margin-left: 4px; font-size: 12px; }
+  .tools { display: flex; gap: 8px; padding: 12px 16px 4px; align-items: center; }
+  .tools input {
+    flex: 1; border: 1px solid var(--line); border-radius: 10px;
+    padding: 9px 12px; font-size: 15px; background: var(--card);
+  }
+  .toggle { font-size: 13px; color: var(--muted); white-space: nowrap; display: flex; gap: 4px; align-items: center; }
+  main { padding: 6px 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px 12px 10px 12px; margin: 10px 0; display: flex; gap: 10px;
+  }
+  .card.done { opacity: .5; }
+  .card.done .title { text-decoration: line-through; }
+  .check {
+    flex: none; width: 24px; height: 24px; border-radius: 50%;
+    border: 2px solid var(--line); background: none; margin-top: 1px; padding: 0;
+  }
+  .card.done .check { background: var(--ok); border-color: var(--ok); }
+  .body { flex: 1; min-width: 0; }
+  .title { font-weight: 600; }
+  .details { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+  .tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #efe8df; }
+  .tag.watch { background: var(--accent-soft); color: var(--accent); }
+  .tag.synth { background: var(--warn-soft); color: var(--warn); }
+  .tag.nat { background: #e5efe2; color: var(--ok); }
+  .tag.price { background: #ece7f3; color: #5b4a7a; }
+  .note { font-size: 13px; margin-top: 7px; padding: 7px 9px; background: #faf6f0; border-radius: 8px; }
+  .row { display: flex; gap: 12px; margin-top: 7px; font-size: 13px; }
+  .row a, .row button { color: var(--accent); background: none; border: 0; padding: 0; font-size: 13px; text-decoration: none; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  .fab {
+    position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom));
+    background: var(--accent); color: #fff; border: 0; border-radius: 999px;
+    padding: 14px 20px; font-size: 16px; font-weight: 600;
+    box-shadow: 0 6px 18px rgba(0,0,0,.15);
+  }
+  .menu { padding: 18px 16px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; }
+  .menu button, .menu label { color: var(--muted); background: none; border: 0; padding: 0; text-decoration: underline; font-size: 13px; }
+  dialog {
+    border: 0; border-radius: 18px; padding: 0; width: min(520px, 94vw);
+    background: var(--card); color: var(--ink);
+  }
+  dialog::backdrop { background: rgba(30,20,10,.35); }
+  form { padding: 18px; display: grid; gap: 11px; }
+  form h2 { margin: 0 0 2px; font-size: 18px; }
+  form label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+  form input, form select, form textarea {
+    font: inherit; color: var(--ink); border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 11px; background: #fff;
+  }
+  form textarea { min-height: 64px; resize: vertical; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .chk { display: flex !important; align-items: center; gap: 8px; color: var(--ink) !important; font-size: 15px !important; }
+  .actions { display: flex; gap: 10px; justify-content: space-between; margin-top: 4px; }
+  .actions button { border: 0; border-radius: 10px; padding: 10px 16px; font-size: 15px; }
+  .primary { background: var(--accent); color: #fff; }
+  .ghost { background: #efe8df; color: var(--ink); }
+  .danger { background: none; color: #b3261e; padding-left: 0 !important; }
+  .toast {
+    position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 9px 14px; border-radius: 10px;
+    font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mes listes d'achats</h1>
+  <div class="sub" id="summary"></div>
+</header>
+
+<nav id="tabs"></nav>
+
+<div class="tools">
+  <input id="search" type="search" placeholder="Rechercher…">
+  <label class="toggle"><input type="checkbox" id="showDone"> achetés</label>
+</div>
+
+<main id="list"></main>
+
+<div class="menu">
+  <button id="exportBtn">Exporter (JSON)</button>
+  <label>Importer<input type="file" id="importFile" accept="application/json" hidden></label>
+  <button id="copyBtn">Copier la liste pour Claude</button>
+</div>
+
+<button class="fab" id="addBtn">+ Ajouter</button>
+
+<dialog id="dlg">
+  <form id="form" method="dialog">
+    <h2 id="formTitle">Nouvel article</h2>
+    <label>Article
+      <input name="title" required placeholder="ex. Housse de couette flanelle">
+    </label>
+    <label>Détails (taille, couleur…)
+      <input name="details" placeholder="ex. 150x200, terracotta">
+    </label>
+    <div class="two">
+      <label>Liste
+        <select name="list"></select>
+      </label>
+      <label>Matière
+        <select name="material">
+          <option value="">—</option>
+          <option value="nat">Naturelle (coton, laine, bois, alu…)</option>
+          <option value="synth">Synthétique ⚠️</option>
+        </select>
+      </label>
+    </div>
+    <label>Lien
+      <input name="url" type="url" placeholder="https://…">
+    </label>
+    <div class="two">
+      <label>Prix repéré (€)
+        <input name="price" inputmode="decimal" placeholder="ex. 179,99">
+      </label>
+      <label>Prix cible (€)
+        <input name="target" inputmode="decimal" placeholder="ex. 130">
+      </label>
+    </div>
+    <label class="chk"><input type="checkbox" name="watch"> À surveiller (attendre une baisse)</label>
+    <label>Notes / meilleure offre
+      <textarea name="note" placeholder="ex. Darty 449,99 € jusqu'au 30/11"></textarea>
+    </label>
+    <div class="actions">
+      <button type="button" class="danger" id="delBtn">Supprimer</button>
+      <span style="display:flex;gap:8px">
+        <button type="button" class="ghost" id="cancelBtn">Annuler</button>
+        <button type="submit" class="primary">Enregistrer</button>
+      </span>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LISTS = [
+  { id: "font-romeu", name: "Font-Romeu" },
+  { id: "maison", name: "Maison" },
+  { id: "noel", name: "Noël" },
+  { id: "moi", name: "Pour moi" },
+  { id: "a-classer", name: "À classer" }
+];
+const KEY = "ines-listes-achats-v1";
+
+const SEED = [
+  { list: "font-romeu", title: "Housses de couette flanelle (enfants)", details: "150x200 cm (couettes IKEA) + taies pour oreillers Pikolin Nova 70 cm", material: "nat" },
+  { list: "font-romeu", title: "Couvertures en laine", details: "Rouge, vert, bleu marine — esprit Noël", material: "nat", note: "La Redoute : ROMU pure laine 74,10 € (-50 %), Toison d'Or dès 77,50 €" },
+  { list: "font-romeu", title: "Haut thermique ski 13-14 ans", details: "Mérinos si possible", material: "nat", note: "Decathlon BL 500 Wool 24,99 € (41 % mérinos) — version polyester 11,99 €" },
+  { list: "font-romeu", title: "Legging thermique 14 ans", details: "", material: "nat", note: "Decathlon BL 500 Wool 21,99 €" },
+  { list: "font-romeu", title: "Legging thermique 4-5 ans", details: "", material: "synth", note: "Mérinos dès 5 ans seulement — BL 500 polyester 11,99 €" },
+  { list: "font-romeu", title: "Gants de ski 14 ans", details: "", material: "synth", note: "Decathlon SKI500 LONG 18,99 € jusqu'au 30/11" },
+  { list: "font-romeu", title: "Chaussettes bien chaudes", details: "Pas forcément de ski", material: "nat", note: "Decathlon chaussettes ski mérinos 500 — 11,99 €" },
+  { list: "font-romeu", title: "Masque de ski adulte + enfant", details: "Écran S3 (soleil)", material: "synth", note: "Wedze G 500 S3 34,99 € (S enfant / L adulte)" },
+  { list: "font-romeu", title: "Tours de cou ski", details: "", material: "nat", note: "Decathlon MT500 mérinos 11,99 €" },
+  { list: "font-romeu", title: "Applique murale", details: "Tête de cheval ou lin — anthracite / marron" },
+  { list: "font-romeu", title: "Patère large", details: "Bois massif", material: "nat" },
+  { list: "font-romeu", title: "Tapis géométrique Mango Home", details: "200x300 cm, chocolat", url: "https://shop.mango.com/es/es/p/home/alfombras/algodon/alfombra-estampado-geometrico-200x300cm/37013291/32/00", price: "179,99", watch: true, material: "nat" },
+  { list: "maison", title: "Lave-linge Bosch Série 6", details: "9 kg", note: "Darty WGG244Z3FR 449,99 € (à vérifier) — Boulanger WGG244F1FR 599 €" },
+  { list: "noel", title: "Vélo pour ma fille", details: "14 pouces (16 si > 105 cm)", note: "Decathlon Discover 500 14\" 127,99 € jusqu'au 23/12" },
+  { list: "moi", title: "Haut thermique ski femme", details: "Taille M — mérinos", material: "nat", note: "Decathlon BL TOP 500 woolneck 59,99 € — Icebreaker Oasis 79,90 € (Snowleader)" },
+  { list: "a-classer", title: "Cadres", details: "2× 32x25 cm, 1× 21x29,7 cm (A4), 1× 50x35 cm" }
+];
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+let items = load();
+let current = "font-romeu";
+let editingId = null;
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return SEED.map(s => ({ id: uid(), done: false, url: "", price: "", target: "", watch: false, note: "", material: "", details: "", ...s }));
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) { toast("Sauvegarde impossible sur ce navigateur"); }
+}
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 1800);
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function renderTabs() {
+  const nav = document.getElementById("tabs");
+  nav.innerHTML = "";
+  LISTS.forEach(l => {
+    const n = items.filter(i => i.list === l.id && !i.done).length;
+    if (l.id === "a-classer" && n === 0 && current !== "a-classer") return;
+    const b = document.createElement("button");
+    b.className = l.id === current ? "on" : "";
+    b.innerHTML = `${esc(l.name)}<span class="n">${n}</span>`;
+    b.onclick = () => { current = l.id; render(); };
+    nav.appendChild(b);
+  });
+  const todo = items.filter(i => !i.done).length;
+  const watch = items.filter(i => i.watch && !i.done).length;
+  document.getElementById("summary").textContent =
+    `${todo} article${todo > 1 ? "s" : ""} à acheter` + (watch ? ` · ${watch} à surveiller` : "");
+}
+
+function renderList() {
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  const showDone = document.getElementById("showDone").checked;
+  const main = document.getElementById("list");
+  let rows = items.filter(i => i.list === current && (showDone || !i.done));
+  if (q) rows = items.filter(i => (showDone || !i.done) &&
+    [i.title, i.details, i.note].join(" ").toLowerCase().includes(q));
+  rows.sort((a, b) => a.done - b.done);
+  if (!rows.length) { main.innerHTML = `<div class="empty">Rien ici pour l'instant.</div>`; return; }
+  main.innerHTML = "";
+  rows.forEach(i => {
+    const el = document.createElement("div");
+    el.className = "card" + (i.done ? " done" : "");
+    const tags = [];
+    if (q) tags.push(`<span class="tag">${esc(LISTS.find(l => l.id === i.list)?.name)}</span>`);
+    if (i.watch) tags.push(`<span class="tag watch">👀 à surveiller</span>`);
+    if (i.price) tags.push(`<span class="tag price">${esc(i.price)} €${i.target ? " → cible " + esc(i.target) + " €" : ""}</span>`);
+    if (i.material === "synth") tags.push(`<span class="tag synth">⚠️ synthétique</span>`);
+    if (i.material === "nat") tags.push(`<span class="tag nat">🌿 matière naturelle</span>`);
+    el.innerHTML = `
+      <button class="check" aria-label="Acheté"></button>
+      <div class="body">
+        <div class="title">${esc(i.title)}</div>
+        ${i.details ? `<div class="details">${esc(i.details)}</div>` : ""}
+        ${tags.length ? `<div class="tags">${tags.join("")}</div>` : ""}
+        ${i.note ? `<div class="note">${esc(i.note)}</div>` : ""}
+        <div class="row">
+          ${i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">Voir le produit ↗</a>` : ""}
+          <button class="edit">Modifier</button>
+        </div>
+      </div>`;
+    el.querySelector(".check").onclick = () => {
+      i.done = !i.done; save(); render();
+      toast(i.done ? "Acheté ✓" : "Remis dans la liste");
+    };
+    el.querySelector(".edit").onclick = () => openForm(i);
+    main.appendChild(el);
+  });
+}
+
+function render() { renderTabs(); renderList(); }
+
+const dlg = document.getElementById("dlg");
+const form = document.getElementById("form");
+form.list.innerHTML = LISTS.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join("");
+
+function openForm(item) {
+  editingId = item ? item.id : null;
+  document.getElementById("formTitle").textContent = item ? "Modifier" : "Nouvel article";
+  document.getElementById("delBtn").style.visibility = item ? "visible" : "hidden";
+  const v = item || { list: current };
+  ["title", "details", "url", "price", "target", "note", "material"].forEach(k => form[k].value = v[k] || "");
+  form.list.value = v.list || current;
+  form.watch.checked = !!v.watch;
+  dlg.showModal();
+}
+form.onsubmit = e => {
+  e.preventDefault();
+  const data = {
+    title: form.title.value.trim(), details: form.details.value.trim(),
+    list: form.list.value, url: form.url.value.trim(), price: form.price.value.trim(),
+    target: form.target.value.trim(), note: form.note.value.trim(),
+    material: form.material.value, watch: form.watch.checked
+  };
+  if (!data.title) return;
+  if (editingId) Object.assign(items.find(i => i.id === editingId), data);
+  else items.unshift({ id: uid(), done: false, ...data });
+  current = data.list;
+  save(); dlg.close(); render(); toast("Enregistré");
+};
+document.getElementById("cancelBtn").onclick = () => dlg.close();
+document.getElementById("delBtn").onclick = () => {
+  const btn = document.getElementById("delBtn");
+  if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; btn.textContent = "Confirmer ?"; return; }
+  items = items.filter(i => i.id !== editingId);
+  btn.dataset.armed = ""; btn.textContent = "Supprimer";
+  save(); dlg.close(); render(); toast("Supprimé");
+};
+dlg.addEventListener("close", () => {
+  const btn = document.getElementById("delBtn");
+  btn.dataset.armed = ""; btn.textContent = "Supprimer";
+});
+
+document.getElementById("addBtn").onclick = () => openForm(null);
+document.getElementById("search").oninput = renderList;
+document.getElementById("showDone").onchange = renderList;
+
+document.getElementById("exportBtn").onclick = () => {
+  const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "listes-achats.json";
+  a.click();
+};
+document.getElementById("importFile").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => {
+    try {
+      const data = JSON.parse(t);
+      if (!Array.isArray(data)) throw 0;
+      items = data; save(); render(); toast("Listes importées");
+    } catch (_) { toast("Fichier invalide"); }
+  });
+};
+document.getElementById("copyBtn").onclick = () => {
+  const txt = LISTS.map(l => {
+    const rows = items.filter(i => i.list === l.id && !i.done);
+    if (!rows.length) return "";
+    return `## ${l.name}\n` + rows.map(i =>
+      `- ${i.title}${i.details ? " — " + i.details : ""}${i.watch ? " (à surveiller)" : ""}${i.url ? " " + i.url : ""}`
+    ).join("\n");
+  }).filter(Boolean).join("\n\n");
+  navigator.clipboard.writeText(txt).then(() => toast("Copié — colle-le à Claude"), () => toast("Copie impossible"));
+};
+
+render();
+</script>
+</body>
+</html>
